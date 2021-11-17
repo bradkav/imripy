@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.integrate import solve_ivp, quad, simpson
+from scipy.integrate import solve_ivp, quad, simps
 from scipy.interpolate import griddata, CloughTocher2DInterpolator
 from scipy.special import ellipeinc, ellipe, ellipkinc
 from scipy.spatial import Delaunay
@@ -866,7 +866,7 @@ class HaloFeedback:
         P_plus = self.scatter_probability(R, EpspDeltaEps, DeltaEps, b_star, v_0, b_90, v_cut)
         tic2 = time.perf_counter()
 
-        norm = simpson(HaloFeedback.P_DeltaEps(v_0, DeltaEps[0], b_90, b_min, b_max), x=DeltaEps[0])
+        norm = simps(HaloFeedback.P_DeltaEps(v_0, DeltaEps[0], b_90, b_min, b_max), x=DeltaEps[0])
 
         '''# Plots the scattering probability on a 2D grid
         import matplotlib.pyplot as plt
@@ -889,7 +889,7 @@ class HaloFeedback:
 
         dfHalo = np.zeros(np.shape(f_grid))
         # The first term of eq (4.7)
-        dfHalo -= f_grid * simpson(P_minus, x=DeltaEps)/T_orb/norm
+        dfHalo -= f_grid * simps(P_minus, x=DeltaEps)/T_orb/norm
 
         # correction calculation to conserve phase space density on a given t_scale, for comparison to Kavanagh code
         correction = np.ones(np.shape(f_grid))
@@ -899,7 +899,7 @@ class HaloFeedback:
 
         tic3 = time.perf_counter()
         # The second term of eq (4.7)
-        dfHalo += simpson(    (Eps/EpspDeltaEps )**(5./2.)
+        dfHalo += simps(    (Eps/EpspDeltaEps )**(5./2.)
                                 #* np.interp(EpspDeltaEps, Eps_grid, f_grid*correction)
                                 * griddata(Eps_grid, f_grid*correction, EpspDeltaEps, method='cubic', fill_value=0.)
                                 * P_plus
