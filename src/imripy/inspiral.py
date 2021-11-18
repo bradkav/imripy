@@ -1074,9 +1074,9 @@ class HaloFeedback:
 
         if dt_Torb is None:
             dt_Torb = 5e3
-        if dt is None and (not t_fin is None) and (not N_step is None):
-            dt = t_fin/float(N_step)
-        elif dt is None:
+        #if dt is None and (not t_fin is None) and (not N_step is None):
+        #    dt = t_fin/float(N_step)
+        if dt is None:
             dt = dt_Torb *Tini_orb
 
         if N_step is None:
@@ -1090,37 +1090,44 @@ class HaloFeedback:
         R_list = np.array([R_0]);   R = R_0
 
         i = 0
+        tic = time.perf_counter()
         while i < N_step and R > R_fin and t <= t_fin:
+            
             v_0 = self.sp.omega_s(R)*R
 
-            tic = time.perf_counter()
             df1 = dt * self.dfHalo_dt(R, v_cut=v_0, t_scale=dt)
-            #BJK - Clip to zero!
-            df1 = np.clip(df1, -self.sp.halo.f_grid, 1e30)
             dr1 = dt * self.dR_dt(self.sp, R)
             self.sp.halo.f_grid += df1; R += dr1;
             df2 = dt * self.dfHalo_dt(R, v_cut=v_0, t_scale=dt)
             dr2 = dt * self.dR_dt(self.sp, R)
             self.sp.halo.f_grid += 0.5 * (df2-df1);  R += 0.5*(dr2-dr1);
-            
-            #BJK - Clip to zero!
-            self.sp.halo.f_grid = np.clip(self.sp.halo.f_grid, 0, 1e30)
-            if (np.sum(self.sp.halo.f_grid < 0) > 0):
-                print("F_GRID negative!")
-                print(self.sp.halo.f_grid)
-            
+
             t += dt
             toc = time.perf_counter()
 
-            if (self.options.verbose > 1):
-                print(i, "t=",t, ",dt=", dt, ",R=", R/self.sp.r_isco(), ", dr/dt=", 0.5*(dr1 + dr2), ", f=" , self.sp.halo.f_grid, ", df/ft=", 0.5*(df1+df2) , " elapsed time ", toc-tic)
+            if ((self.options.verbose > 1) or (self.options.verbose > 0 and (i%100 == 0))):
+                #print(i, "t=",t, ",dt=", dt, ",R=", R/self.sp.r_isco(), ", dr/dt=", 0.5*(dr1 + dr2), ", f=" , self.sp.halo.f_grid, ", df/ft=", 0.5*(df1+df2) , " elapsed time ", toc-tic)
+                print("Step ", i, ": t = ",t, "; dt = ", dt, "; R/r_isco = ", R/self.sp.r_isco(), "; elapsed time = ", toc-tic)
             t_list = np.append(t_list, t+dt)
             f_list = np.concatenate((f_list, [self.sp.halo.f_grid]))
             R_list = np.append(R_list, R)
             i+= 1
             T_orb = 2.*np.pi/self.sp.omega_s(R)
+            
+            #Note that this doesn't continuously update!
             if adjust_stepsize:
+                #print("Adjusting step size!")
                 dt = np.min([dt, dt_Torb*T_orb])
+                
+            
+
+        print("Stopping conditions:")
+        print("    i, N_step = ", i, N_step)
+        print("    R, R_fin  = ", R, R_fin)
+        print("    t, t_fin  = ", t, t_fin)
+
+        #Calculate final point at merger!
+        
 
         # Collect results
         ev = HaloFeedback.EvolutionResults(self.sp, self.options, t_list, R_list, f_list)
