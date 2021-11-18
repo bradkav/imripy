@@ -1126,8 +1126,10 @@ class HaloFeedback:
         print("    R, R_fin  = ", R, R_fin)
         print("    t, t_fin  = ", t, t_fin)
 
-        #Calculate final point at merger!
-        
+        #Correct final point to be exactly R_fin (rather than < R_fin)
+        t_final = np.interp(R_fin, R_list, t_list)
+        t_list[-1] = t_final
+        R_list[-1] = R_fin
 
         # Collect results
         ev = HaloFeedback.EvolutionResults(self.sp, self.options, t_list, R_list, f_list)
