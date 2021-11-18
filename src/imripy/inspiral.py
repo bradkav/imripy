@@ -1105,6 +1105,9 @@ class HaloFeedback:
             
             #BJK - Clip to zero!
             self.sp.halo.f_grid = np.clip(self.sp.halo.f_grid, 0, 1e30)
+            if (np.sum(self.sp.halo.f_grid < 0) > 0):
+                print("F_GRID negative!")
+                print(self.sp.halo.f_grid)
             
             t += dt
             toc = time.perf_counter()
