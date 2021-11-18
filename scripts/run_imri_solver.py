@@ -109,7 +109,7 @@ print("f_i [Hz]:", (sp.omega_s(R0)/np.pi)*ms.s_to_pc)
 
 # Evolve the system
 #ev = haloModel.Evolve( R0, R_fin = R_fin)
-ev = haloModel.Evolve_HFK( R0, R_fin = R_fin, dt_Torb=1e3, adjust_stepsize=True)
+ev = haloModel.Evolve_HFK( R0, R_fin = R_fin, dt_Torb=1e3, adjust_stepsize=True, N_step=int(1e6))
 
 rhoeff = np.zeros(len(ev.t))
 for i in range(len(ev.t)):
