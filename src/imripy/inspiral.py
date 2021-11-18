@@ -10,7 +10,6 @@ import imripy.merger_system as ms
 import imripy.halo
 
 
-
 class Classic:
     """
     A class bundling the functions to simulate an inspiral with basic energy conservation arguments
@@ -534,7 +533,7 @@ class Classic:
                 An evolution object that contains the results
         """
         opt.elliptic = e_0 > 0.
-
+        
         def g(e):
             return e**(12./19.)/(1. - e**2) * (1. + 121./304. * e**2)**(870./2299.)
 
@@ -1027,7 +1026,7 @@ class HaloFeedback:
 
         # Evolve
         Int = solve_ivp(dy_dt, [t_0/t_scale, (t_0+t_fin)/t_scale], y_0, dense_output=True, events=fin_reached, max_step=t_step_max,
-                                                                                        method = 'RK23', atol=y_0_atol, rtol=y_0_rtol)
+                                                                                        method = 'RK23', rtol=y_0_rtol, atol=y_0_atol)
 
         # Collect results
         R = Int.y[0]*R_scale
@@ -1104,7 +1103,8 @@ class HaloFeedback:
             t += dt
             toc = time.perf_counter()
 
-            print(i, "t=",t, ",dt=", dt, ",R=", R/self.sp.r_isco(), ", dr/dt=", 0.5*(dr1 + dr2), ", f=" , self.sp.halo.f_grid, ", df/ft=", 0.5*(df1+df2) , " elapsed time ", toc-tic)
+            if (self.options.verbose > 1):
+                print(i, "t=",t, ",dt=", dt, ",R=", R/self.sp.r_isco(), ", dr/dt=", 0.5*(dr1 + dr2), ", f=" , self.sp.halo.f_grid, ", df/ft=", 0.5*(df1+df2) , " elapsed time ", toc-tic)
             t_list = np.append(t_list, t+dt)
             f_list = np.concatenate((f_list, [self.sp.halo.f_grid]))
             R_list = np.append(R_list, R)
