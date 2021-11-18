@@ -1095,11 +1095,17 @@ class HaloFeedback:
 
             tic = time.perf_counter()
             df1 = dt * self.dfHalo_dt(R, v_cut=v_0, t_scale=dt)
+            #BJK - Clip to zero!
+            df1 = np.clip(df1, -self.sp.halo.f_grid, 1e30)
             dr1 = dt * self.dR_dt(self.sp, R)
             self.sp.halo.f_grid += df1; R += dr1;
             df2 = dt * self.dfHalo_dt(R, v_cut=v_0, t_scale=dt)
             dr2 = dt * self.dR_dt(self.sp, R)
             self.sp.halo.f_grid += 0.5 * (df2-df1);  R += 0.5*(dr2-dr1);
+            
+            #BJK - Clip to zero!
+            self.sp.halo.f_grid = np.clip(self.sp.halo.f_grid, 0, 1e30)
+            
             t += dt
             toc = time.perf_counter()
 
