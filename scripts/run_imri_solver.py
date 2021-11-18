@@ -24,6 +24,10 @@ parser.add_argument('-gamma', '--gamma', help='slope of DM spike', type=float, d
 
 parser.add_argument('-ID', '--ID', help='Optional ID to add on the end of the file names', type=str, default="NONE")
 parser.add_argument('-outdir', '--outdir', type=str, default="")
+parser.add_argument('-verbose', '--verbose', type=int, default=1)
+
+parser.add_argument('-ri', '--ri', help ='Initial separation of the binary, in units of r_isco', type=float, default=50.0)
+parser.add_argument('-rf', '--rf', help ='Final separation of the binary, in units of r_isco', type=float, default=1.0)
 
 args = parser.parse_args()
 
@@ -68,8 +72,8 @@ f_grid_interp = interp1d(dh.Eps_grid, dh.f_grid, kind='cubic', fill_value=(0.,0.
 sp = ms.SystemProp(m1, m2, dh, D)
 
 # Model the inspiral
-R0 = 180.* sp.r_isco()
-R_fin = 175. * sp.r_isco()
+R0 = args.ri* sp.r_isco()
+R_fin = args.rf * sp.r_isco()
 r_grid = np.geomspace(sp.r_isco(), 50*R0, 10000)
 
 Eps_grid = np.geomspace(1e-13, 1e1, 1000)
@@ -78,7 +82,7 @@ Eps_grid = np.sort(np.append(Eps_grid, np.geomspace(1e-1 * (sp.m1/R0 - (sp.omega
 sp.halo.Eps_grid = Eps_grid; sp.halo.update_Eps()
 sp.halo.f_grid = f_grid_interp(Eps_grid)
 haloModel = inspiral.HaloFeedback(sp, options=inspiral.HaloFeedback.EvolutionOptions(accuracy=1e-6))
-haloModel.options.verbose = 2
+haloModel.options.verbose = args.verbose
 
 #------ Checks:
 plot_checks = False
@@ -99,18 +103,19 @@ if (plot_checks):
 #------------
 
 print("r_i [pc]:", R0)
+print("r_f [pc]:", R_fin)
 print("f_i [Hz]:", (sp.omega_s(R0)/np.pi)*ms.s_to_pc)
 
 
 # Evolve the system
 #ev = haloModel.Evolve( R0, R_fin = R_fin)
-ev = haloModel.Evolve_HFK( R0, R_fin = R_fin, adjust_stepsize=True)
+ev = haloModel.Evolve_HFK( R0, R_fin = R_fin, dt_Torb=1e3, adjust_stepsize=True)
 
 rhoeff = np.zeros(len(ev.t))
-for i in tqdm(range(len(ev.t))):
+for i in range(len(ev.t)):
     dh.f_grid = ev.f[i,:]
     j0 = np.digitize(ev.R[i], r_grid)
-    jvals = np.arange(j0-5, j0+5)
+    jvals = np.arange(max(0,j0-5), min(j0+5,len(r_grid)))
     r_tmp = r_grid[jvals]
     rhovals = dh.density(r_tmp, v_max=[sp.omega_s(r)*r for r in r_tmp])
     rhoeff[i] = np.interp(ev.R[i], r_tmp, rhovals)/ms.solar_mass_to_pc
@@ -119,9 +124,9 @@ f_GW = (sp.omega_s(ev.R)/np.pi)*ms.s_to_pc
     
 htxt = f'M1 = {args.M1}; M2 = {args.M2}; rho_sp = {args.rho_sp}; gamma = {args.gamma}'
 htxt += '\nColumns: t [s], r [pc], f_GW [Hz], rho_eff (< v_orb) [Msun/pc^3]'
-np.savetxt(args.outdir + "EffectiveDensity_" + IDstr + ".txt", list(zip(ev.t/ms.s_to_pc, ev.R, f_GW, rhoeff)), header=htxt)
+np.savetxt(args.outdir + "Trajectory_" + IDstr + ".txt", list(zip(ev.t/ms.s_to_pc, ev.R, f_GW, rhoeff)), header=htxt)
 
-fig, ax = plt.subplots(ncols=2, nrows=1)
+fig, ax = plt.subplots(ncols=2, nrows=1,figsize=(10, 5))
 ax[0].semilogy(ev.t/ms.s_to_pc, ev.R)
 ax[0].set_xlabel(r"$t$ [s]")
 ax[0].set_ylabel(r"$R$ [pc]")
